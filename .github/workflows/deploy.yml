@@ -1,4 +1,4 @@
-name: Deploy to AWS (main only)
+name: Deploy to AWS (Docker | main only)
 
 on:
   push:
@@ -11,32 +11,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
+      # Login to GitHub Container Registry
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.Token }}" | docker login ghcr.io \
+            -u ${{ github.actor }} --password-stdin
 
-      - name: Install dependencies
-        run: npm install
+      # Build Docker image (Node 24 comes from Dockerfile)
+      - name: Build Docker image
+        run: |
+          docker build -t ghcr.io/${{ github.repository }}:latest .
 
-      - name: Build
-        run: npm run build || echo "No build step"
+      # Push Docker image
+      - name: Push Docker image
+        run: |
+          docker push ghcr.io/${{ github.repository }}:latest
 
+      # Deploy on EC2
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            docker login ghcr.io \
+              -u ${{ github.actor }} \
+              -p ${{ secrets.Token }}
 
-            nvm use 24.12.0
-            cd /var/www/test-aws
-            git pull origin main
-            npm install
-            npm run build || echo "No build step"
-            pm2 restart 0 --update-env
+            docker pull ghcr.io/${{ github.repository }}:latest
+
+            docker stop test-aws || true
+            docker rm test-aws || true
+
+            docker run -d \
+              --name test-aws \
+              -p 5000:5000 \
+              --restart unless-stopped \
+              ghcr.io/${{ github.repository }}:latest
