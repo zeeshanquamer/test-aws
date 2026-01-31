@@ -32,7 +32,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             sudo -i
-            cd /var/www/test-aws || git clone https://github.com/${{ github.repository }} app
+            cd var/www/test-aws || git clone https://github.com/${{ github.repository }} app
             cd test-aws
             git pull origin main
             npm install
