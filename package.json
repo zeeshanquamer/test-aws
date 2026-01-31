@@ -1,0 +1,23 @@
+{
+  "name": "aws",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "local": "nodemon",
+    "start": "ts-node ./src/index.ts",
+    "dev": "npm run build && node ./dist/index.js",
+    "prod": "npm run build && node ./dist/index.js",
+    "build": "tsc -b",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@types/express": "^5.0.6",
+    "express": "^5.2.1",
+    "node-ts": "^8.0.11"
+  }
+}
